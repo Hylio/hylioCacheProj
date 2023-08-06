@@ -1,4 +1,4 @@
-package eviction_algorithm
+package lru
 
 import "container/list"
 
