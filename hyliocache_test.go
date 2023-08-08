@@ -17,11 +17,11 @@ func TestGetter(t *testing.T) {
 	}
 }
 
-var db = map[string]string{
-	"zhanghao":    "hylio",
-	"wangrui":     "civet",
-	"zhouruqiang": "dio",
-}
+//var db = map[string]string{
+//	"zhanghao":    "hylio",
+//	"wangrui":     "civet",
+//	"zhouruqiang": "dio",
+//}
 
 func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
