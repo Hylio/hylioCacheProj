@@ -1,24 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
 )
 
-var set = make(map[int]bool)
-var total int
-
-func printOnce(num int) {
-	if _, exist := set[num]; !exist {
-		total++
-	}
-	set[num] = true
+func serve(c *gin.Context) {
+	log.Println(c.Request.URL.Path)
+	c.String(http.StatusOK, "hello, world")
 }
 
 func main() {
-	for i := 0; i < 100; i++ {
-		go printOnce(100)
+	r := gin.Default()
+	r.GET("/", serve)
+
+	err := r.Run("localhost:8080")
+	if err != nil {
+		log.Fatal("Failed to start server")
 	}
-	time.Sleep(time.Second)
-	fmt.Print(total)
 }
