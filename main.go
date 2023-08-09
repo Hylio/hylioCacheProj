@@ -2,24 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 )
-
-//func serve(c *gin.Context) {
-//	log.Println(c.Request.URL.Path)
-//	c.String(http.StatusOK, "hello, world")
-//}
-//
-//func main() {
-//	r := gin.Default()
-//	r.GET("/", serve)
-//
-//	err := r.Run("localhost:8080")
-//	if err != nil {
-//		log.Fatal("Failed to start server")
-//	}
-//}
 
 var db = map[string]string{
 	"zhanghao":    "hylio",
@@ -28,7 +13,7 @@ var db = map[string]string{
 }
 
 func main() {
-	NewGroup("scores", 2<<10, GetterFunc(
+	NewGroup("aka", 2<<10, GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[DB] search key", key)
 			if v, ok := db[key]; ok {
@@ -39,6 +24,9 @@ func main() {
 
 	addr := "localhost:9999"
 	peers := NewHTTPPool(addr)
-	log.Println("geecache is running at", addr)
-	log.Fatal(http.ListenAndServe(addr, peers))
+	log.Println("hyliocache is running at", addr)
+	//log.Fatal(http.ListenAndServe(addr, peers))
+	r := gin.Default()
+	r.GET("_hyliocache/:groupName/:key", peers.Serve)
+	log.Fatal(r.Run(addr))
 }

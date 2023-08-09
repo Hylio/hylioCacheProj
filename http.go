@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strings"
@@ -25,34 +26,33 @@ func (p *HTTPPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", p.self, fmt.Sprintf(format, v...))
 }
 
-func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *HTTPPool) Serve(c *gin.Context) {
 	// 限制访问路径
-	if !strings.HasPrefix(r.URL.Path, p.basePath) {
-		panic("HTTPPool serving unexpected path: " + r.URL.Path)
+	if !strings.HasPrefix(c.Request.URL.Path, p.basePath) {
+		panic("HTTPPool serving unexpected path: " + c.Request.URL.Path)
 	}
-	p.Log("%s %s", r.Method, r.URL.Path)
+	p.Log("%s %s", c.Request.Method, c.Request.URL.Path)
 	// /<basepath>/<groupname>/<key>
-	parts := strings.SplitN(r.URL.Path[len(p.basePath):], "/", 2)
+	parts := strings.SplitN(c.Request.URL.Path[len(p.basePath):], "/", 2)
 	if len(parts) != 2 {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
-
-	groupName := parts[0]
-	key := parts[1]
+	groupName, key := parts[0], parts[1]
 
 	group := GetGroup(groupName)
+
 	if group == nil {
-		http.Error(w, "no such group: "+groupName, http.StatusNotFound)
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "no such group: " + groupName})
 		return
 	}
 
 	view, err := group.Get(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(view.ByteSlice())
+	c.Header("Content-Type", "application/octet-stream")
+	c.Writer.Write(view.ByteSlice())
 }
