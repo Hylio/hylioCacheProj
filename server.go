@@ -3,16 +3,25 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"hylioCache/consistenthash"
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 )
 
-const defaultBasePath = "/_hyliocache/"
+const (
+	defaultBasePath = "/_hyliocache/"
+	defaultReplicas = 50
+)
 
+// HTTPPool 实现了服务端功能
 type HTTPPool struct {
-	self     string
-	basePath string
+	self        string // 服务地址 like "http://localhost:8080"
+	basePath    string // 服务路径
+	mu          sync.Mutex
+	peers       *consistenthash.Map    // 一致性哈希 选择节点
+	httpGetters map[string]*httpGetter // 每个节点对应的httpGetter
 }
 
 func NewHTTPPool(self string) *HTTPPool {
@@ -56,3 +65,27 @@ func (p *HTTPPool) Serve(c *gin.Context) {
 	c.Header("Content-Type", "application/octet-stream")
 	c.Writer.Write(view.ByteSlice())
 }
+
+// Set 将各个远端地址配置到Server里
+func (p *HTTPPool) Set(peers ...string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.peers = consistenthash.New(defaultReplicas, nil)
+	p.peers.Add(peers...)
+	p.httpGetters = make(map[string]*httpGetter, len(peers))
+	for _, peer := range peers {
+		p.httpGetters[peer] = &httpGetter{baseURL: peer + p.basePath}
+	}
+}
+
+func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if peer := p.peers.Get(key); peer != "" && peer != p.self {
+		p.Log("Pick peer %s", peer)
+		return p.httpGetters[peer], true
+	}
+	return nil, false
+}
+
+var _ PeerPicker = (*HTTPPool)(nil)
