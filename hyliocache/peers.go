@@ -1,4 +1,4 @@
-package main
+package hyliocache
 
 // PeerPicker 保证了获取远端分布式节点的能力
 type PeerPicker interface {

@@ -1,7 +1,8 @@
-package main
+package hyliocache
 
 import (
 	"fmt"
+	"hylioCache/hyliocache/singleflight"
 	"log"
 	"sync"
 )
@@ -33,6 +34,7 @@ type Group struct {
 	getter    Getter
 	mainCache cache
 	peers     PeerPicker
+	loader    *singleflight.Group
 }
 
 var (
@@ -51,6 +53,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		name:      name,
 		getter:    getter,
 		mainCache: cache{cacheBytes: cacheBytes},
+		loader:    &singleflight.Group{},
 	}
 	groups[name] = g
 	return g
@@ -77,15 +80,21 @@ func (g *Group) Get(key string) (ByteView, error) {
 }
 
 func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peers != nil {
-		if peer, ok := g.peers.PickPeer(key); ok {
-			if value, err = g.getFromPeer(key, peer); err == nil {
-				return value, nil
+	view, err2 := g.loader.Do(key, func() (interface{}, error) {
+		if g.peers != nil {
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if value, err = g.getFromPeer(key, peer); err == nil {
+					return value, nil
+				}
+				log.Println("[hylioCache] Failed to get from peer", err)
 			}
-			log.Println("[hylioCache] Failed to get from peer", err)
 		}
+		return g.getLocally(key)
+	})
+	if err2 != nil {
+		return view.(ByteView), err2
 	}
-	return g.getLocally(key)
+	return
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {
@@ -100,6 +109,7 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 }
 
 func (g *Group) getFromPeer(key string, peer PeerGetter) (ByteView, error) {
+	log.Println("get from peer :", key)
 	bytes, err := peer.Get(g.name, key)
 	if err != nil {
 		return ByteView{}, err

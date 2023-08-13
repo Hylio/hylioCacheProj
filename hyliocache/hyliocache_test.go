@@ -1,4 +1,4 @@
-package main
+package hyliocache
 
 import (
 	"fmt"
@@ -24,10 +24,10 @@ func TestGetter(t *testing.T) {
 //}
 
 func TestGet(t *testing.T) {
-	loadCounts := make(map[string]int, len(db))
+	loadCounts := make(map[string]int, len(hyliocache.db))
 	c := NewGroup("eng_name", 2<<10, GetterFunc(func(key string) ([]byte, error) {
 		fmt.Println("searching key", key)
-		if v, ok := db[key]; ok {
+		if v, ok := hyliocache.db[key]; ok {
 			if _, ok := loadCounts[key]; !ok {
 				loadCounts[key] = 0
 			}
@@ -37,7 +37,7 @@ func TestGet(t *testing.T) {
 		return nil, fmt.Errorf("%s not exist", key)
 	}))
 
-	for k, v := range db {
+	for k, v := range hyliocache.db {
 		// 第一次访问 调用回调函数 访问db
 		if view, err := c.Get(k); err != nil || view.String() != v {
 			t.Fatal("failed to get value")

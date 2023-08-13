@@ -1,9 +1,9 @@
-package main
+package hyliocache
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"hylioCache/consistenthash"
+	"hylioCache/hyliocache/consistenthash"
 	"log"
 	"net/http"
 	"strings"

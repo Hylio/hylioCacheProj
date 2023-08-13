@@ -1,11 +1,11 @@
-package main
+package hyliocache
 
 /*
 cache 模块负责提供缓存的并发控制
 */
 
 import (
-	"hylioCache/lru"
+	"hylioCache/hyliocache/lru"
 	"sync"
 )
 

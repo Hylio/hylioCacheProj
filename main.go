@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"hylioCache/hyliocache"
 	"log"
 	"net/http"
 )
@@ -14,8 +15,8 @@ var db = map[string]string{
 	"zhouruqiang": "dio",
 }
 
-func startCacheServer(addr string, addrs []string, g *Group) {
-	peers := NewHTTPPool(addr)
+func startCacheServer(addr string, addrs []string, g *hyliocache.Group) {
+	peers := hyliocache.NewHTTPPool(addr)
 	peers.Set(addrs...)
 	g.RegisterPeers(peers)
 	log.Println("hylioCache is running at", addr)
@@ -24,7 +25,7 @@ func startCacheServer(addr string, addrs []string, g *Group) {
 	log.Fatal(r.Run(addr[7:]))
 }
 
-func startApiServer(apiAddr string, g *Group) {
+func startApiServer(apiAddr string, g *hyliocache.Group) {
 	r := gin.Default()
 	r.GET("/api", func(c *gin.Context) {
 		key := c.DefaultQuery("key", "")
@@ -59,7 +60,7 @@ func main() {
 		addrs = append(addrs, v)
 	}
 
-	c := NewGroup("aka", 2<<10, GetterFunc(
+	c := hyliocache.NewGroup("aka", 2<<10, hyliocache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[DB] searching key", key)
 			if v, ok := db[key]; ok {
