@@ -3,7 +3,9 @@ package hyliocache
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/golang/protobuf/proto"
 	"hylioCache/hyliocache/consistenthash"
+	pb "hylioCache/hyliocache/hyliocachepb"
 	"log"
 	"net/http"
 	"strings"
@@ -48,7 +50,6 @@ func (p *HTTPPool) Serve(c *gin.Context) {
 		return
 	}
 	groupName, key := parts[0], parts[1]
-
 	group := GetGroup(groupName)
 
 	if group == nil {
@@ -61,9 +62,15 @@ func (p *HTTPPool) Serve(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	body, err := proto.Marshal(&pb.Response{
+		Value: view.ByteSlice(),
+	})
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.Header("Content-Type", "application/octet-stream")
-	c.Writer.Write(view.ByteSlice())
+	c.Writer.Write(body)
 }
 
 // Set 将各个远端地址配置到Server里

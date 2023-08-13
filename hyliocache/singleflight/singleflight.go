@@ -1,6 +1,8 @@
 package singleflight
 
-import "sync"
+import (
+	"sync"
+)
 
 // call 表示正在进行中的请求
 type call struct {

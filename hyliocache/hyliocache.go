@@ -2,6 +2,7 @@ package hyliocache
 
 import (
 	"fmt"
+	pb "hylioCache/hyliocache/hyliocachepb"
 	"hylioCache/hyliocache/singleflight"
 	"log"
 	"sync"
@@ -91,7 +92,7 @@ func (g *Group) load(key string) (value ByteView, err error) {
 		}
 		return g.getLocally(key)
 	})
-	if err2 != nil {
+	if err2 == nil {
 		return view.(ByteView), err2
 	}
 	return
@@ -109,12 +110,17 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 }
 
 func (g *Group) getFromPeer(key string, peer PeerGetter) (ByteView, error) {
-	log.Println("get from peer :", key)
-	bytes, err := peer.Get(g.name, key)
+	req := &pb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	res := &pb.Response{}
+	err := peer.Get(req, res)
+	fmt.Println(res.Value)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{b: bytes}, nil
+	return ByteView{b: res.Value}, nil
 }
 
 // populateCache 把最近访问过的 没有在缓存中的数据 保存在缓存中

@@ -26,7 +26,6 @@ var db = map[string]string{
 func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
 	c := NewGroup("eng_name", 2<<10, GetterFunc(func(key string) ([]byte, error) {
-		fmt.Println("searching key", key)
 		if v, ok := db[key]; ok {
 			if _, ok := loadCounts[key]; !ok {
 				loadCounts[key] = 0
